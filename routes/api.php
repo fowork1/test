@@ -14,6 +14,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
+/*Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});*/
+
+
+/*Route::prefix('api')
+    ->middleware('api')
+    ->namespace($this->namespace.'\Api')
+    ->group(base_path('routes/api.php'));*/
+
+Route::group(['prefix' => 'v1', 'namespace' => 'API'], function () {
+    Route::post('/search', 'RealtyController@search');
 });
+
+
