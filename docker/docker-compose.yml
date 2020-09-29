@@ -4,7 +4,7 @@ services:
   nginx:
     image: nginx:stable-alpine
     container_name: nginx
-    restart: always
+    restart: "no"
     ports:
       - "8080:80"
     volumes:
@@ -18,7 +18,7 @@ services:
   postgres:
     image: postgres
     container_name: postgres
-    restart: always
+    restart: "no"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 
@@ -39,7 +39,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: php
-    restart: always
+    restart: "no"
     volumes:
       - ..:/var/www/html
       - ./php/php.ini:/usr/local/etc/php/php.ini
@@ -53,7 +53,7 @@ services:
   db:
     image: adminer
     container_name: adminer
-    restart: always
+    restart: "no"
     ports:
       - 3000:8080
     depends_on:
@@ -61,7 +61,7 @@ services:
   redis:
     image: redis
     container_name: redis
-    restart: always
+    restart: "no"
     ports:
       - 6380:6380
     expose:

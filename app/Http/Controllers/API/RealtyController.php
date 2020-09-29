@@ -47,10 +47,6 @@ class RealtyController extends Controller
             $query->where('garages', $req->garages);
         }
 
-        // Кусок для отлова запросов в лог
-        /*$q = vsprintf(str_replace(array('?'), array('\'%s\''), $query->toSql()), $query->getBindings());
-        Log::debug("query ------------------------ " . PHP_EOL . $q);*/
-
         return new RealtyResource($query->get());
     }
 }
