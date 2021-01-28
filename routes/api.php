@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'v1', 'namespace' => 'API'], function () {
     Route::post('/search', 'RealtyController@search');
+    Route::resource('/realty', 'RealtyController')->only(['store', 'update', 'destroy']);
 });
 
 

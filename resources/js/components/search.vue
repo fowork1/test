@@ -49,19 +49,19 @@
                     <el-input v-model="elementRow.name"></el-input>
                 </el-form-item>
                 <el-form-item label="Price" prop="price">
-                    <el-input v-model.number="elementRow.price"></el-input>
+                    <el-input-number v-model.number="elementRow.price" :min="100000"></el-input-number>
                 </el-form-item>
                 <el-form-item label="Bedrooms" prop="bedrooms">
-                    <el-input v-model.number="elementRow.bedrooms"></el-input>
+                    <el-input-number v-model.number="elementRow.bedrooms" :min="1"></el-input-number>
                 </el-form-item>
                 <el-form-item label="Bathrooms" prop="bathrooms">
-                    <el-input v-model.number="elementRow.bathrooms"></el-input>
+                    <el-input-number v-model.number="elementRow.bathrooms" :min="1"></el-input-number>
                 </el-form-item>
                 <el-form-item label="Storeys" prop="storeys">
-                    <el-input v-model.number="elementRow.storeys"></el-input>
+                    <el-input-number v-model.number="elementRow.storeys" :min="1"></el-input-number>
                 </el-form-item>
                 <el-form-item label="Garages" prop="garages">
-                    <el-input v-model.number="elementRow.garages"></el-input>
+                    <el-input-number v-model.number="elementRow.garages" :min="0"></el-input-number>
                 </el-form-item>
 
                 <el-form-item>
@@ -101,24 +101,6 @@
     export default {
         name: 'search',
         data() {
-            var validatorCheckPrice = (rule, value, callback) => {
-                console.log("validatorCheckPrice START");
-                if (!value) {
-                    return callback(new Error('Please input the price'));
-                }
-                setTimeout(() => {
-                    /*if (!Number.isInteger(value)) {
-                        callback(new Error('Please input digits'));
-                    } else {*/
-                        if (value < 100000) {
-                            callback(new Error('Price must be greater than 100,000.00$'));
-                        } else {
-                            callback();
-                        }
-                    //}
-                }, 1000);
-            };
-
             return {
                 searchForm: {
                     name: null,
@@ -130,6 +112,7 @@
                     garages: null,
                 },
 
+                // class for element form
                 elementRow: {
                     name: null,
                     price: null,
@@ -139,16 +122,18 @@
                     garages: null,
                 },
 
+                // element form rules for validate
                 elementRules: {
-                    price: [
-                        { validator: validatorCheckPrice, trigger: 'red' }
-                    ]
+                    name: [
+                        { required: true, message: 'Please input name of realty', trigger: 'blur' },
+                        { min: 1, max: 255, message: 'Length should be 1 to 255', trigger: 'blur' }
+                    ],
                 },
 
-                resData: null,
-                loading: false,
-                isShowElementForm: false,
-                editIndex: null,
+                resData: null,              // data for table
+                loading: false,             // loading flag
+                isShowElementForm: false,   // show element form flag
+                editIndex: null,            // index element on form editing
             }
         },
         methods: {
@@ -188,10 +173,24 @@
                     cancelButtonText: 'Cancel',
                     type: 'warning'
                 }).then(() => {
-                    this.resData.splice(index, 1);
-                    this.$message({
-                        type: 'success',
-                        message: 'Delete completed'
+                    this.loading = true;
+                    this.$axios.delete(`/api/v1/realty/${row.id}`)
+                    .then(resp => {
+                        if(resp.data.success){
+                            this.resData.splice(index, 1);
+                            this.$message({
+                                type: 'success',
+                                message: resp.data.message
+                            });
+                        } else {
+                            this.showError(resp.data);
+                        }
+                    })
+                    .catch(err => {
+                        this.showError(err);
+                    })
+                    .finally(()=>{
+                        this.loading = false;
                     });
                 }).catch(() => {
                     this.$message({
@@ -214,15 +213,57 @@
                 this.isShowElementForm = true;
             },
 
-            onSave(){
-                if(this.editIndex !== null) {
-                    Object.assign(this.resData[this.editIndex], this.elementRow);
-                    this.editIndex = null;
-                } else {
-                    this.resData.push(this.elementRow);
-                }
+            async onSave(){
+                this.$refs['elementRow'].validate((valid) => {
+                    if (!valid) return;
 
-                this.isShowElementForm = false;
+                    // Create new row
+                    if(this.editIndex === null) {
+                        this.loading = true;
+                        this.$axios.post(`/api/v1/realty`, this.elementRow)
+                        .then(resp => {
+                            if(resp.data.success){
+                                this.resData.push(resp.data.data);
+                                this.$message({
+                                    type: 'success',
+                                    message: resp.data.message
+                                });
+                                this.isShowElementForm = false;
+                            } else {
+                                this.showError(resp.data);
+                            }
+                        })
+                        .catch(err => {
+                            this.showError(err);
+                        })
+                        .finally(()=>{
+                            this.loading = false;
+                        });
+                    } else {
+                        // update existing row
+                        this.loading = true;
+                        this.$axios.put(`/api/v1/realty/${this.elementRow.id}`, this.elementRow)
+                        .then(resp => {
+                            if(resp.data.success){
+                                Object.assign(this.resData[this.editIndex], resp.data.data);
+                                this.editIndex = null;
+                                this.$message({
+                                    type: 'success',
+                                    message: resp.data.message
+                                });
+                                this.isShowElementForm = false;
+                            } else {
+                                this.showError(resp.data);
+                            }
+                        })
+                        .catch(err => {
+                            this.showError(err);
+                        })
+                        .finally(()=>{
+                            this.loading = false;
+                        });
+                    }
+                });
             },
 
             onCancel(){
@@ -231,6 +272,7 @@
                 for(var key in this.elementRow){
                     this.elementRow[key] = null;
                 }
+                this.$refs['elementRow'].clearValidate();
             },
 
             elementFormClose(done) {
@@ -240,6 +282,24 @@
                     done();
                 })
                 .catch(_ => {});
+            },
+
+            showError(err){
+                let data = err.response ? err.response.data : err;
+                let errors = '';
+                if(data.errors){
+                    for(var erField in data.errors){
+                        errors += "<br>" + erField + " => " + data.errors[erField].join("<br>");
+                    }
+                }
+
+                this.$notify.error({
+                    title: data.message,
+                    message: errors,
+                    dangerouslyUseHTMLString: true,
+                });
+
+                console.error(err, data);
             }
         },
 
